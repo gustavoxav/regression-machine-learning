@@ -1,0 +1,10 @@
+preprocessamento,encoding,padronizacao,score_r2,mae,mse,rmse
+com_dummy_com_std,one_hot,sim,0.446449,39562.03,4090524594.35,63957.21
+com_dummy_sem_std,one_hot,nao,0.480841,38144.16,3836378164.28,61938.5
+sem_dummy_com_std,label_encoder,sim,0.241388,46321.57,5605844521.81,74872.19
+sem_dummy_sem_std,label_encoder,nao,0.241388,46321.57,5605844521.81,74872.19
+com_dummy_com_std,one_hot,sim,0.446449,39562.03,4090524594.35,63957.21
+com_dummy_com_std,one_hot,sim,0.446449,39562.03,4090524594.35,63957.21
+com_dummy_sem_std,one_hot,nao,0.480841,38144.16,3836378164.28,61938.5
+sem_dummy_com_std,label_encoder,sim,0.241388,46321.57,5605844521.81,74872.19
+sem_dummy_sem_std,label_encoder,nao,0.241388,46321.57,5605844521.81,74872.19
