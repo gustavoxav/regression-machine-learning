@@ -32,6 +32,13 @@ base = base.drop(columns=['salary', 'salary_currency'])
 if 'Unnamed: 0' in base.columns:
     base = base.drop(columns=['Unnamed: 0'])
 
+# Removendo linhas duplicadas
+num_duplicated = len(base[base.duplicated()])
+print(f'STATUS: There are {num_duplicated} duplicated rows')
+print(f'Shape antes: {base.shape}')
+base = base.drop_duplicates()
+print(f'After removing duplicates: {base.shape}')
+
 # =============================================================================
 #                     Separando dados em previsores e objetivo
 # =============================================================================
