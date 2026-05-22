@@ -7,6 +7,8 @@ Executa em sequência:
   1. Pré-processamento unificado (todas as 4 variações)
   2. Regressão Linear (em todas as bases)
   3. Regressão Polinomial (em todas as bases)
+  4. Árvore de Decisão (em todas as bases)
+  5. Random Forest (em todas as bases)
 
 Basta executar este único arquivo para gerar todos os resultados.
 """
@@ -26,6 +28,9 @@ scripts = [
     ('Pre-processamento Unificado', os.path.join(_dir, 'pre_processamento', 'pre_processamento_unificado.py')),
     ('Regressao Linear',            os.path.join(_dir, 'regressao_linear', 'regressao_linear.py')),
     ('Regressao Polinomial',        os.path.join(_dir, 'regressao_polinomial', 'regressao_polinomial.py')),
+    ('Arvore de Decisao',           os.path.join(_dir, 'arvore_decisao', 'arvore_decisao.py')),
+    ('Random Forest',               os.path.join(_dir, 'random_forest', 'random_forest.py')),
+    ('Consolidacao de Resultados',  os.path.join(_dir, 'resultados_comparativos', 'extrair_melhores.py')),
 ]
 
 print('=' * 60)
@@ -54,5 +59,10 @@ print(f'{"="*60}')
 print(f'\nResultados disponiveis em:')
 print(f'  - Regressao Linear:     regressao_linear/resultados_regressao_linear.csv')
 print(f'  - Regressao Polinomial: regressao_polinomial/resultados_regressao_polinomial.csv')
-print(f'  - Graficos Linear:     regressao_linear/graficos/')
-print(f'  - Graficos Polinomial: regressao_polinomial/graficos/')
+print(f'  - Arvore de Decisao:    arvore_decisao/resultados_arvore_decisao.csv')
+print(f'  - Random Forest:        random_forest/resultados_random_forest.csv')
+print(f'  - Melhores (Consolid):  resultados_comparativos/melhores_resultados.csv / .json')
+print(f'  - Graficos Linear:      regressao_linear/graficos/')
+print(f'  - Graficos Polinomial:  regressao_polinomial/graficos/')
+print(f'  - Graficos Arvore:      arvore_decisao/graficos/')
+print(f'  - Graficos Random F.:   random_forest/graficos/')

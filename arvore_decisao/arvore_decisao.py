@@ -1,11 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Regressão Polinomial
+Regressão com Árvore de Decisão
 Dataset: ds_salaries.csv
 Target: salary_in_usd
-
-Detecta automaticamente TODAS as bases pré-processadas em dados_processados/
-e testa graus de 2 a 7 para cada uma, registrando os resultados em CSV.
 """
 
 import pandas as pd
@@ -13,11 +10,15 @@ import matplotlib
 matplotlib.use('Agg')  # Modo não-interativo (apenas salva gráficos)
 import matplotlib.pyplot as plt
 from sklearn import metrics
-from sklearn.preprocessing import PolynomialFeatures
-from sklearn.linear_model import LinearRegression
+from sklearn.tree import DecisionTreeRegressor
 import numpy as np
 import os
 import json
+
+def mean_absolute_percentage_error(y_true, y_pred):
+    y_true = np.array(y_true).flatten()
+    y_pred = np.array(y_pred).flatten()
+    return np.mean(np.abs((y_true - y_pred) / y_true)) * 100
 
 ################## Configuração de diretórios ##################
 
@@ -40,11 +41,11 @@ graficos_dir = os.path.join(_dir, 'graficos')
 os.makedirs(graficos_dir, exist_ok=True)
 
 # Caminho do arquivo de resultados
-caminho_resultados = os.path.join(_dir, 'resultados_regressao_polinomial.csv')
+caminho_resultados = os.path.join(_dir, 'resultados_arvore_decisao.csv')
 
 ################## Configuração ##################
 
-GRAUS = range(2, 8)  # Testa graus de 2 a 7
+MAX_DEPTHS = range(1, 21)  # Testa max_depth de 1 a 20
 
 ################## Detectar todas as bases pré-processadas ##################
 
@@ -91,56 +92,44 @@ for dados_dir in bases:
     else:
         encoding = 'label_encoder'
 
-    ################## Loop por cada grau ##################
+    ################## Loop por cada max_depth ##################
 
-    for grau in GRAUS:
+    for depth in MAX_DEPTHS:
         print(f'\n{"="*60}')
-        print(f'  Testando grau {grau} ({NOME_PREPROCESSAMENTO})')
+        print(f'  Testando max_depth={depth} ({NOME_PREPROCESSAMENTO})')
         print(f'{"="*60}')
 
-        ################## Regressão Polinomial ##################
+        ################## Regressão com Árvore de Decisão ##################
 
-        try:
-            poly = PolynomialFeatures(degree=grau)
-            previsores_treinamento_poly = poly.fit_transform(previsores_treinamento)
-            previsores_teste_poly = poly.transform(previsores_teste)
-        except MemoryError:
-            print(f"\n[AVISO] Erro de Memoria (MemoryError) ao tentar processar o grau {grau}!")
-            print(f"Com {previsores_treinamento.shape[1]} features de entrada, o grau {grau} gera um volume de dados muito grande para a memoria RAM.")
-            print("Interrompendo os graus subsequentes para esta base.")
-            break
-
-        regressor = LinearRegression()
+        regressor = DecisionTreeRegressor(max_depth=depth, random_state=0)
 
         # Treinamento
-        regressor.fit(previsores_treinamento_poly, objetivo_treinamento)
+        regressor.fit(previsores_treinamento, objetivo_treinamento)
 
-        score_treino = regressor.score(previsores_treinamento_poly, objetivo_treinamento)
+        score_treino = regressor.score(previsores_treinamento, objetivo_treinamento)
 
         # Teste
-        previsoes = regressor.predict(previsores_teste_poly)
+        previsoes = regressor.predict(previsores_teste)
 
         ################## Avaliação dos resultados ##################
 
-        score = regressor.score(previsores_teste_poly, objetivo_teste)
+        score = regressor.score(previsores_teste, objetivo_teste)
         mae = metrics.mean_absolute_error(objetivo_teste, previsoes)
         mse = metrics.mean_squared_error(objetivo_teste, previsoes)
         rmse = np.sqrt(metrics.mean_squared_error(objetivo_teste, previsoes))
+        mape = mean_absolute_percentage_error(objetivo_teste, previsoes)
 
-        print(f'Grau do polinomio: {grau}')
+        print(f'Max Depth: {depth}')
         print(f'Score (R2) Treinamento: {score_treino}')
         print(f'Score (R2) Teste: {score}')
+        print(f'Mean Absolute Percentage Error: {mape}')
         print(f'Mean Absolute Error: {mae}')
         print(f'Mean Squared Error: {mse}')
         print(f'Root Mean Squared Error: {rmse}')
 
-        # Parâmetros estimados para o modelo
-        coef_0 = regressor.intercept_
-        coeficientes = regressor.coef_
-
         ################## Visualizações - Salvando como imagem ##################
 
-        nome_grafico = f'{NOME_PREPROCESSAMENTO}_grau_{grau}'
+        nome_grafico = f'{NOME_PREPROCESSAMENTO}_depth_{depth}'
 
         # Valores reais vs previstos
         plt.figure(figsize=(10, 6))
@@ -148,7 +137,7 @@ for dados_dir in bases:
         plt.plot([objetivo_teste.values.min(), objetivo_teste.values.max()],
                  [objetivo_teste.values.min(), objetivo_teste.values.max()],
                  color='red', linestyle='--')
-        plt.title(f'Regressão Polinomial (grau={grau}) - Valores Reais vs Previstos')
+        plt.title(f'Árvore de Decisão (max_depth={depth}) - Valores Reais vs Previstos')
         plt.xlabel('Salário Real (USD)')
         plt.ylabel('Salário Previsto (USD)')
         caminho_grafico_reais = os.path.join(graficos_dir, f'{nome_grafico}.png')
@@ -160,11 +149,26 @@ for dados_dir in bases:
         plt.figure(figsize=(10, 6))
         plt.scatter(previsoes, residuos, alpha=0.5)
         plt.axhline(y=0, color='red', linestyle='--')
-        plt.title(f'Regressão Polinomial (grau={grau}) - Gráfico de Resíduos')
+        plt.title(f'Árvore de Decisão (max_depth={depth}) - Gráfico de Resíduos')
         plt.xlabel('Valores Previstos (USD)')
         plt.ylabel('Resíduos')
         caminho_grafico_residuos = os.path.join(graficos_dir, f'{nome_grafico}_residuos.png')
         plt.savefig(caminho_grafico_residuos, dpi=150, bbox_inches='tight')
+        plt.close()
+
+        # Feature Importance
+        n_features = previsores_treinamento.shape[1]
+        importancias = regressor.feature_importances_
+        indices_top = np.argsort(importancias)[-20:]  # Top 20 features
+        plt.figure(figsize=(10, 8))
+        plt.barh(range(len(indices_top)), importancias[indices_top], align='center')
+        plt.yticks(range(len(indices_top)),
+                   [previsores_treinamento.columns[i] for i in indices_top])
+        plt.xlabel('Feature Importance')
+        plt.ylabel('Feature')
+        plt.title(f'Árvore de Decisão (max_depth={depth}) - Importância das Features')
+        caminho_grafico_features = os.path.join(graficos_dir, f'{nome_grafico}_features.png')
+        plt.savefig(caminho_grafico_features, dpi=150, bbox_inches='tight')
         plt.close()
 
         print(f'Graficos salvos em: {graficos_dir}/{nome_grafico}_*.png')
@@ -174,8 +178,10 @@ for dados_dir in bases:
         resultado = {
             'preprocessamento': NOME_PREPROCESSAMENTO,
             'encoding': encoding,
-            'grau': grau,
+            'max_depth': depth,
+            'score_r2_treino': round(score_treino, 6),
             'score_r2': round(score, 6),
+            'mape': round(mape, 2),
             'mae': round(mae, 2),
             'mse': round(mse, 2),
             'rmse': round(rmse, 2)
@@ -189,7 +195,7 @@ df_resultados = pd.DataFrame(todos_resultados)
 df_resultados.to_csv(caminho_resultados, index=False)
 
 print(f'\n{"="*60}')
-print(f'[OK] Regressao Polinomial concluida para {len(bases)} bases!')
+print(f'[OK] Arvore de Decisao concluida para {len(bases)} bases!')
 print(f'Total de testes realizados: {len(todos_resultados)}')
 print(f'Resultados salvos em: {caminho_resultados}')
 print(f'Graficos salvos em: {graficos_dir}')

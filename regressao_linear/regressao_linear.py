@@ -3,11 +3,6 @@
 Regressão Linear Múltipla
 Dataset: ds_salaries.csv
 Target: salary_in_usd
-
-Detecta automaticamente TODAS as bases pré-processadas em dados_processados/
-e executa a regressão linear para cada uma, registrando os resultados em CSV.
-
-Pode ser executado individualmente ou via executar_tudo.py.
 """
 
 import pandas as pd
