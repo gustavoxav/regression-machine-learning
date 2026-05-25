@@ -9,6 +9,8 @@ Executa em sequência:
   3. Regressão Polinomial (em todas as bases)
   4. Árvore de Decisão (em todas as bases)
   5. Random Forest (em todas as bases)
+  6. SVM (em todas as bases)
+  7. Rede Neural (em todas as bases)
 
 Basta executar este único arquivo para gerar todos os resultados.
 """
@@ -30,6 +32,8 @@ scripts = [
     ('Regressao Polinomial',        os.path.join(_dir, 'regressao_polinomial', 'regressao_polinomial.py')),
     ('Arvore de Decisao',           os.path.join(_dir, 'arvore_decisao', 'arvore_decisao.py')),
     ('Random Forest',               os.path.join(_dir, 'random_forest', 'random_forest.py')),
+    ('SVM',                         os.path.join(_dir, 'svm', 'svm.py')),
+    ('Rede Neural',                 os.path.join(_dir, 'rede_neural', 'rede_neural.py')),
     ('Consolidacao de Resultados',  os.path.join(_dir, 'resultados_comparativos', 'extrair_melhores.py')),
 ]
 
@@ -61,8 +65,12 @@ print(f'  - Regressao Linear:     regressao_linear/resultados_regressao_linear.c
 print(f'  - Regressao Polinomial: regressao_polinomial/resultados_regressao_polinomial.csv')
 print(f'  - Arvore de Decisao:    arvore_decisao/resultados_arvore_decisao.csv')
 print(f'  - Random Forest:        random_forest/resultados_random_forest.csv')
+print(f'  - SVM:                  svm/resultados_svm.csv')
+print(f'  - Rede Neural:          rede_neural/resultados_rede_neural.csv')
 print(f'  - Melhores (Consolid):  resultados_comparativos/melhores_resultados.csv / .json')
 print(f'  - Graficos Linear:      regressao_linear/graficos/')
 print(f'  - Graficos Polinomial:  regressao_polinomial/graficos/')
 print(f'  - Graficos Arvore:      arvore_decisao/graficos/')
 print(f'  - Graficos Random F.:   random_forest/graficos/')
+print(f'  - Graficos SVM:         svm/graficos/')
+print(f'  - Graficos Rede Neural: rede_neural/graficos/')

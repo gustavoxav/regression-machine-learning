@@ -19,7 +19,9 @@ CAMINHOS_RESULTADOS = {
     'Regressao Linear': os.path.join(_dir, '..', 'regressao_linear', 'resultados_regressao_linear.csv'),
     'Regressao Polinomial': os.path.join(_dir, '..', 'regressao_polinomial', 'resultados_regressao_polinomial.csv'),
     'Arvore de Decisao': os.path.join(_dir, '..', 'arvore_decisao', 'resultados_arvore_decisao.csv'),
-    'Random Forest': os.path.join(_dir, '..', 'random_forest', 'resultados_random_forest.csv')
+    'Random Forest': os.path.join(_dir, '..', 'random_forest', 'resultados_random_forest.csv'),
+    'SVM': os.path.join(_dir, '..', 'svm', 'resultados_svm.csv'),
+    'Rede Neural': os.path.join(_dir, '..', 'rede_neural', 'resultados_rede_neural.csv')
 }
 
 caminho_csv_saida = os.path.join(_dir, 'melhores_resultados.csv')

@@ -1,0 +1,74 @@
+[
+    {
+        "metodo": "Regressao Linear",
+        "preprocessamento": "com_dummy_sem_std",
+        "encoding": "one_hot",
+        "parametros": "N/A",
+        "score_r2_treino": null,
+        "score_r2": 0.480841,
+        "mape": null,
+        "mae": 38144.16,
+        "mse": 3836378164.28,
+        "rmse": 61938.5
+    },
+    {
+        "metodo": "Regressao Polinomial",
+        "preprocessamento": "sem_dummy_com_std",
+        "encoding": "label_encoder",
+        "parametros": "grau=2",
+        "score_r2_treino": null,
+        "score_r2": 0.19592,
+        "mape": null,
+        "mae": 45738.73,
+        "mse": 5941837100.8,
+        "rmse": 77083.31
+    },
+    {
+        "metodo": "Arvore de Decisao",
+        "preprocessamento": "com_dummy_com_std",
+        "encoding": "one_hot",
+        "parametros": "max_depth=11",
+        "score_r2_treino": 0.774432,
+        "score_r2": 0.529922,
+        "mape": 52.06,
+        "mae": 36514.81,
+        "mse": 3473688925.33,
+        "rmse": 58938.01
+    },
+    {
+        "metodo": "Random Forest",
+        "preprocessamento": "com_dummy_sem_std",
+        "encoding": "one_hot",
+        "parametros": "n_estimators=50, max_depth=20",
+        "score_r2_treino": 0.805577,
+        "score_r2": 0.456548,
+        "mape": 62.2,
+        "mae": 37533.4,
+        "mse": 4015897485.68,
+        "rmse": 63371.11
+    },
+    {
+        "metodo": "SVM",
+        "preprocessamento": "sem_dummy_sem_std",
+        "encoding": "label_encoder",
+        "parametros": "kernel=linear, C=10.0, epsilon=0.1, gamma=nan, degree=nan",
+        "score_r2_treino": 0.253494,
+        "score_r2": 0.224909,
+        "mape": 110.49,
+        "mae": 49561.03,
+        "mse": 5727617483.33,
+        "rmse": 75681.02
+    },
+    {
+        "metodo": "Rede Neural",
+        "preprocessamento": "com_dummy_com_std",
+        "encoding": "one_hot",
+        "parametros": "hidden_layer_sizes=(128, 64, 32), activation=relu, alpha=0.001",
+        "score_r2_treino": 0.530386,
+        "score_r2": 0.23201,
+        "mape": 57.95,
+        "mae": 44891.55,
+        "mse": 5675142809.22,
+        "rmse": 75333.54
+    }
+]

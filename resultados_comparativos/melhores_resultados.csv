@@ -1,0 +1,7 @@
+metodo,preprocessamento,encoding,parametros,score_r2_treino,score_r2,mape,mae,mse,rmse
+Regressao Linear,com_dummy_sem_std,one_hot,N/A,,0.480841,,38144.16,3836378164.28,61938.5
+Regressao Polinomial,sem_dummy_com_std,label_encoder,grau=2,,0.19592,,45738.73,5941837100.8,77083.31
+Arvore de Decisao,com_dummy_com_std,one_hot,max_depth=11,0.774432,0.529922,52.06,36514.81,3473688925.33,58938.01
+Random Forest,com_dummy_sem_std,one_hot,"n_estimators=50, max_depth=20",0.805577,0.456548,62.2,37533.4,4015897485.68,63371.11
+SVM,sem_dummy_sem_std,label_encoder,"kernel=linear, C=10.0, epsilon=0.1, gamma=nan, degree=nan",0.253494,0.224909,110.49,49561.03,5727617483.33,75681.02
+Rede Neural,com_dummy_com_std,one_hot,"hidden_layer_sizes=(128, 64, 32), activation=relu, alpha=0.001",0.530386,0.23201,57.95,44891.55,5675142809.22,75333.54
