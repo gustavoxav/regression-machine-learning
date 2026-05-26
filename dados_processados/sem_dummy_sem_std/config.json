@@ -1,1 +1,9 @@
-{"NOME_PREPROCESSAMENTO": "sem_dummy_sem_std"}
+{
+  "NOME_PREPROCESSAMENTO": "sem_dummy_sem_std",
+  "encoding": "label_encoder",
+  "padronizacao": "nenhuma",
+  "n_amostras": 565,
+  "n_treino": 423,
+  "n_teste": 142,
+  "n_features": 9
+}

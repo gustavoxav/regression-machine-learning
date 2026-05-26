@@ -1,25 +1,31 @@
 # -*- coding: utf-8 -*-
 """
-Pré-processamento Unificado
+Pre-processamento Unificado
 Dataset: ds_salaries.csv
 Target: salary_in_usd
 
-Executa TODAS as 4 variações de pré-processamento de uma só vez:
+Gera as 4 variacoes padrao de pre-processamento:
   1. com_dummy_com_std   (One-Hot + StandardScaler)
-  2. com_dummy_sem_std   (One-Hot, sem padronização)
+  2. com_dummy_sem_std   (One-Hot, sem padronizacao)
   3. sem_dummy_com_std   (LabelEncoder + StandardScaler)
-  4. sem_dummy_sem_std   (LabelEncoder, sem padronização)
+  4. sem_dummy_sem_std   (LabelEncoder, sem padronizacao)
 
-Cada variação é salva em sua própria subpasta dentro de dados_processados/.
+Melhorias aplicadas:
+  - OrdinalEncoder para experience_level (EN=0, MI=1, SE=2, EX=3)
+  - Agrupamento de job_title em 6 grupos (job_group)
+  - Feature binaria is_us_company
+  - Sem remocao de outliers
+  - Sem log-transform do target
 """
 
 import pandas as pd
+import numpy as np
 import os
 import json
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.preprocessing import StandardScaler, OrdinalEncoder, LabelEncoder
 
-################## Configuração de diretórios ##################
+################## Configuracao de diretorios ##################
 
 try:
     _dir = os.path.dirname(os.path.abspath(__file__))
@@ -34,38 +40,92 @@ dados_dir_raiz = os.path.join(_dir, '..', 'dados_processados')
 base = pd.read_csv(caminho_csv)
 print(f'Shape original: {base.shape}')
 
-# Removendo linhas duplicadas
-num_duplicated = len(base[base.duplicated()])
-print(f'STATUS: There are {num_duplicated} duplicated rows')
-base = base.drop_duplicates()
-print(f'After removing duplicates: {base.shape}')
-
-# Removendo colunas que causam data leakage (salary e salary_currency)
-base = base.drop(columns=['salary', 'salary_currency'])
-
-# Removendo coluna de índice se existir
+# Removendo coluna de indice se existir
 if 'Unnamed: 0' in base.columns:
     base = base.drop(columns=['Unnamed: 0'])
 
-# Procurando as colunas que possuem algum valor faltante
+# Removendo colunas que causam data leakage
+base = base.drop(columns=['salary', 'salary_currency'])
+
+# Verificando valores nulos
 nulos = pd.isnull(base).any()
 if nulos.any():
     print(f'Colunas com valores nulos: {nulos[nulos].index.tolist()}')
 else:
     print('Nenhum valor nulo encontrado.')
 
-################## Separando dados em previsores e objetivo ##################
+# Removendo linhas duplicadas
+num_duplicated = len(base[base.duplicated()])
+print(f'STATUS: There are {num_duplicated} duplicated rows')
+print(f'STATUS: Dimension of "df" = {base.shape}')
+base = base.drop_duplicates()
+print(f'STATUS: Dimension of "After removing duplicates" = {base.shape}')
 
+################## Feature Engineering ##################
+
+# --- 1. Agrupamento de job_title em grupos amplos ---
+grupos_cargo = {
+    'Data Scientist': [
+        'Data Scientist', 'Applied Data Scientist', 'Principal Data Scientist',
+        'Lead Data Scientist', 'Staff Data Scientist', 'Data Science Consultant',
+        'Data Science Engineer', 'Data Specialist'
+    ],
+    'Data Engineer': [
+        'Data Engineer', 'Big Data Engineer', 'Cloud Data Engineer',
+        'Lead Data Engineer', 'Principal Data Engineer', 'Data Engineering Manager',
+        'Director of Data Engineering', 'Big Data Architect', 'Data Architect',
+        'ETL Developer', 'Analytics Engineer', 'Data Analytics Engineer',
+        'Data Analytics Lead', 'Machine Learning Infrastructure Engineer'
+    ],
+    'ML Engineer': [
+        'Machine Learning Engineer', 'ML Engineer', 'Lead Machine Learning Engineer',
+        'Machine Learning Scientist', 'Machine Learning Manager',
+        'Machine Learning Developer', 'Head of Machine Learning',
+        'Applied Machine Learning Scientist', 'NLP Engineer',
+        'Computer Vision Engineer', 'Computer Vision Software Engineer',
+        '3D Computer Vision Researcher'
+    ],
+    'Data Analyst': [
+        'Data Analyst', 'BI Data Analyst', 'Business Data Analyst',
+        'Lead Data Analyst', 'Principal Data Analyst', 'Marketing Data Analyst',
+        'Financial Data Analyst', 'Finance Data Analyst', 'Data Analytics Manager',
+        'Data Analytics Lead'
+    ],
+    'Manager/Director': [
+        'Data Science Manager', 'Director of Data Science', 'Head of Data Science',
+        'Head of Data', 'Data Engineering Manager', 'Data Analytics Manager',
+        'Director of Data Engineering'
+    ],
+    'Research/AI': [
+        'Research Scientist', 'AI Scientist', 'Applied Machine Learning Scientist'
+    ]
+}
+
+def mapear_cargo(titulo):
+    for grupo, titulos in grupos_cargo.items():
+        if titulo in titulos:
+            return grupo
+    return 'Other'
+
+base['job_group'] = base['job_title'].apply(mapear_cargo)
+
+# --- 2. Feature binaria: empresa sediada nos EUA ---
+base['is_us_company'] = (base['company_location'] == 'US').astype(int)
+
+################## Separando features e target ##################
+
+# Usa job_group no lugar de job_title (menor cardinalidade)
 cols_previsores = ['work_year', 'experience_level', 'employment_type',
-                   'job_title', 'employee_residence', 'remote_ratio',
-                   'company_location', 'company_size']
+                   'job_group', 'employee_residence', 'remote_ratio',
+                   'company_location', 'company_size', 'is_us_company']
 
 cols_objetivo = ['salary_in_usd']
 
-colunas_categoricas = ['experience_level', 'employment_type', 'job_title',
-                       'employee_residence', 'company_location', 'company_size']
+colunas_categoricas_nominais = ['employment_type', 'job_group',
+                                'employee_residence', 'company_location',
+                                'company_size']
 
-################## Definição das variações ##################
+################## Definicao das variacoes ##################
 
 VARIACOES = [
     {'nome': 'com_dummy_com_std',  'dummy': True,  'std': True},
@@ -74,64 +134,91 @@ VARIACOES = [
     {'nome': 'sem_dummy_sem_std',  'dummy': False, 'std': False},
 ]
 
-################## Processamento de cada variação ##################
+################## Processamento de cada variacao ##################
 
 for var in VARIACOES:
-    nome = var['nome']
+    nome       = var['nome']
     usar_dummy = var['dummy']
-    usar_std = var['std']
+    usar_std   = var['std']
 
     print(f'\n{"="*60}')
     print(f'  Processando: {nome}')
     print(f'{"="*60}')
 
     previsores = base[cols_previsores].copy()
-    objetivo = base[cols_objetivo].copy()
+    objetivo   = base[cols_objetivo].copy()
 
-    # Encoding
+    # --- Encoding ---
+    # OrdinalEncoder para experience_level (ordem natural: EN < MI < SE < EX)
+    oe = OrdinalEncoder(categories=[['EN', 'MI', 'SE', 'EX']])
+    previsores['experience_level'] = oe.fit_transform(
+        previsores[['experience_level']]
+    ).astype(int)
+
     if usar_dummy:
-        previsores = pd.get_dummies(previsores, columns=colunas_categoricas)
-        print(f'  Encoding: One-Hot (dummy) -> {previsores.shape[1]} features')
+        previsores = pd.get_dummies(previsores, columns=colunas_categoricas_nominais)
+        n_features = previsores.shape[1]
+        encoding_label = 'one_hot'
+        print(f'  Encoding: OrdinalEncoder(exp_level) + One-Hot -> {n_features} features')
     else:
-        label_encoders = {}
-        for coluna in colunas_categoricas:
+        for coluna in colunas_categoricas_nominais:
             le = LabelEncoder()
             previsores[coluna] = le.fit_transform(previsores[coluna])
-            label_encoders[coluna] = le
-        print(f'  Encoding: LabelEncoder -> {previsores.shape[1]} features')
+        n_features = previsores.shape[1]
+        encoding_label = 'label_encoder'
+        print(f'  Encoding: OrdinalEncoder(exp_level) + LabelEncoder -> {n_features} features')
 
-    # Train/test split
-    previsores_treinamento, previsores_teste, objetivo_treinamento, objetivo_teste = train_test_split(
+    # --- Train/test split ---
+    (previsores_treinamento, previsores_teste,
+     objetivo_treinamento, objetivo_teste) = train_test_split(
         previsores, objetivo, test_size=0.25, random_state=0
     )
+    print(f'  Split: {len(previsores_treinamento)} treino | {len(previsores_teste)} teste')
 
-    # Padronização
+    # --- Padronizacao ---
     if usar_std:
         scaler = StandardScaler()
-        previsores_treinamento = scaler.fit_transform(previsores_treinamento)
-        previsores_teste = scaler.transform(previsores_teste)
-        print('  Padronizacao: StandardScaler aplicado')
+        previsores_treinamento_out = scaler.fit_transform(previsores_treinamento)
+        previsores_teste_out       = scaler.transform(previsores_teste)
+        std_label = 'StandardScaler'
+        print('  Padronizacao: StandardScaler (fit apenas no treino)')
     else:
+        previsores_treinamento_out = previsores_treinamento.values
+        previsores_teste_out       = previsores_teste.values
+        std_label = 'nenhuma'
         print('  Padronizacao: Nenhuma')
 
-    # Salvando em subpasta própria
+    # --- Salvando ---
+    col_names = list(previsores.columns)
     dados_dir = os.path.join(dados_dir_raiz, nome)
     os.makedirs(dados_dir, exist_ok=True)
 
-    pd.DataFrame(previsores_treinamento).to_csv(os.path.join(dados_dir, 'previsores_treinamento.csv'), index=False)
-    pd.DataFrame(previsores_teste).to_csv(os.path.join(dados_dir, 'previsores_teste.csv'), index=False)
-    objetivo_treinamento.to_csv(os.path.join(dados_dir, 'objetivo_treinamento.csv'), index=False)
-    objetivo_teste.to_csv(os.path.join(dados_dir, 'objetivo_teste.csv'), index=False)
+    pd.DataFrame(previsores_treinamento_out, columns=col_names).to_csv(
+        os.path.join(dados_dir, 'previsores_treinamento.csv'), index=False)
+    pd.DataFrame(previsores_teste_out, columns=col_names).to_csv(
+        os.path.join(dados_dir, 'previsores_teste.csv'), index=False)
+    objetivo_treinamento.to_csv(
+        os.path.join(dados_dir, 'objetivo_treinamento.csv'), index=False)
+    objetivo_teste.to_csv(
+        os.path.join(dados_dir, 'objetivo_teste.csv'), index=False)
 
-    config = {'NOME_PREPROCESSAMENTO': nome}
-    with open(os.path.join(dados_dir, 'config.json'), 'w') as f:
-        json.dump(config, f)
+    config = {
+        'NOME_PREPROCESSAMENTO': nome,
+        'encoding': encoding_label,
+        'padronizacao': std_label,
+        'n_amostras': int(len(base)),
+        'n_treino': int(len(previsores_treinamento)),
+        'n_teste': int(len(previsores_teste)),
+        'n_features': int(n_features)
+    }
+    with open(os.path.join(dados_dir, 'config.json'), 'w', encoding='utf-8') as f:
+        json.dump(config, f, indent=2, ensure_ascii=False)
 
     print(f'  [OK] Salvo em: {os.path.abspath(dados_dir)}')
 
 ################## Resumo final ##################
 
 print(f'\n{"="*60}')
-print('[OK] Todas as 4 variacoes processadas com sucesso!')
+print(f'[OK] Todas as {len(VARIACOES)} variacoes processadas com sucesso!')
 print(f'Dados salvos em: {os.path.abspath(dados_dir_raiz)}')
 print(f'{"="*60}')

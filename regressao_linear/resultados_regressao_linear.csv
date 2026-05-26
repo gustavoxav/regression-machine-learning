@@ -1,5 +1,5 @@
-preprocessamento,encoding,score_r2,mae,mse,rmse
-com_dummy_com_std,one_hot,0.446449,39562.03,4090524594.35,63957.21
-com_dummy_sem_std,one_hot,0.480841,38144.16,3836378164.28,61938.5
-sem_dummy_com_std,label_encoder,0.241388,46321.57,5605844521.81,74872.19
-sem_dummy_sem_std,label_encoder,0.241388,46321.57,5605844521.81,74872.19
+preprocessamento,encoding,padronizacao,r2_score,mape,mae,mse,rmse
+com_dummy_com_std,one_hot,StandardScaler,0.453285,72.3,39708.76,3157345218.38,56190.26
+com_dummy_sem_std,one_hot,nenhuma,0.454865,72.41,39763.24,3148222598.38,56109.02
+sem_dummy_com_std,label_encoder,StandardScaler,0.427373,84.2,39862.7,3306995878.9,57506.49
+sem_dummy_sem_std,label_encoder,nenhuma,0.427373,84.2,39862.7,3306995878.9,57506.49
