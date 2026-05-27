@@ -122,26 +122,18 @@ previsoes_melhor = melhor_full['_previsoes']
 y_teste_melhor   = melhor_full['_y_teste']
 nome_melhor      = melhor_full['preprocessamento']
 
-# Plot 1: Valores Reais vs Previstos
-fig, axes = plt.subplots(1, 2, figsize=(14, 6))
-fig.suptitle(f'Regressao Linear — Melhor Resultado\n{nome_melhor} | R²={melhor_row["r2_score"]:.4f}',
+# Plot: Valores Reais vs Previstos
+fig, ax = plt.subplots(figsize=(8, 6))
+fig.suptitle(f'Regressao Linear - Melhor Resultado\n{nome_melhor} | R2={melhor_row["r2_score"]:.4f}',
              fontsize=13, fontweight='bold')
 
-axes[0].scatter(y_teste_melhor.values, previsoes_melhor, alpha=0.6, color='steelblue', edgecolors='white', linewidth=0.4)
+ax.scatter(y_teste_melhor.values, previsoes_melhor, alpha=0.6, color='steelblue', edgecolors='white', linewidth=0.4)
 lim = [y_teste_melhor.values.min(), y_teste_melhor.values.max()]
-axes[0].plot(lim, lim, color='red', linestyle='--', linewidth=1.5, label='Ideal')
-axes[0].set_xlabel('Salario Real (USD)')
-axes[0].set_ylabel('Salario Previsto (USD)')
-axes[0].set_title('Real vs Previsto')
-axes[0].legend()
-
-# Plot 2: Residuos
-residuos = y_teste_melhor.values.flatten() - previsoes_melhor.flatten()
-axes[1].scatter(previsoes_melhor, residuos, alpha=0.6, color='darkorange', edgecolors='white', linewidth=0.4)
-axes[1].axhline(y=0, color='red', linestyle='--', linewidth=1.5)
-axes[1].set_xlabel('Valores Previstos (USD)')
-axes[1].set_ylabel('Residuos')
-axes[1].set_title('Grafico de Residuos')
+ax.plot(lim, lim, color='red', linestyle='--', linewidth=1.5, label='Ideal')
+ax.set_xlabel('Salario Real (USD)')
+ax.set_ylabel('Salario Previsto (USD)')
+ax.set_title('Real vs Previsto')
+ax.legend()
 
 plt.tight_layout()
 caminho_plot = os.path.join(graficos_dir, f'melhor_{nome_melhor}.png')

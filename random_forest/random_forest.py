@@ -146,8 +146,8 @@ y_teste_melhor   = melhor_full['_y_teste']
 X_treino_melhor  = melhor_full['_X_treino']
 reg_melhor       = melhor_full['_regressor']
 
-fig, axes = plt.subplots(1, 3, figsize=(18, 6))
-fig.suptitle(f'Random Forest — Melhor Resultado\n{nome_melhor} | n_est={n_est_melhor}, depth={depth_melhor} | R²={melhor_row["r2_score"]:.4f}',
+fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+fig.suptitle(f'Random Forest - Melhor Resultado\n{nome_melhor} | n_est={n_est_melhor}, depth={depth_melhor} | R2={melhor_row["r2_score"]:.4f}',
              fontsize=13, fontweight='bold')
 
 # Plot 1: Real vs Previsto
@@ -159,22 +159,14 @@ axes[0].set_ylabel('Salario Previsto (USD)')
 axes[0].set_title('Real vs Previsto')
 axes[0].legend()
 
-# Plot 2: Residuos
-residuos = y_teste_melhor.values.flatten() - previsoes_melhor.flatten()
-axes[1].scatter(previsoes_melhor, residuos, alpha=0.6, color='darkorange', edgecolors='white', linewidth=0.4)
-axes[1].axhline(y=0, color='red', linestyle='--', linewidth=1.5)
-axes[1].set_xlabel('Valores Previstos (USD)')
-axes[1].set_ylabel('Residuos')
-axes[1].set_title('Grafico de Residuos')
-
-# Plot 3: Feature Importance (Top 15)
+# Plot 2: Feature Importance (Top 15)
 importancias = reg_melhor.feature_importances_
 indices_top  = np.argsort(importancias)[-15:]
-axes[2].barh(range(len(indices_top)), importancias[indices_top], align='center', color='seagreen', alpha=0.8)
-axes[2].set_yticks(range(len(indices_top)))
-axes[2].set_yticklabels([X_treino_melhor.columns[i] for i in indices_top], fontsize=8)
-axes[2].set_xlabel('Importancia')
-axes[2].set_title('Top 15 Features')
+axes[1].barh(range(len(indices_top)), importancias[indices_top], align='center', color='seagreen', alpha=0.8)
+axes[1].set_yticks(range(len(indices_top)))
+axes[1].set_yticklabels([X_treino_melhor.columns[i] for i in indices_top], fontsize=8)
+axes[1].set_xlabel('Importancia')
+axes[1].set_title('Top 15 Features')
 
 plt.tight_layout()
 caminho_plot = os.path.join(graficos_dir, f'melhor_{nome_melhor}_est{n_est_melhor}_d{depth_melhor}.png')
