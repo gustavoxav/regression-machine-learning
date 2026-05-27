@@ -3,11 +3,6 @@
 Regressao Linear Multipla
 Dataset: ds_salaries.csv
 Target: salary_in_usd
-
-Fluxo:
-  1. Roda o modelo em todas as bases pre-processadas -> preenche CSV
-  2. Analisa o CSV e gera o plot SOMENTE do melhor resultado (maior R2)
-  3. Appenda o melhor resultado ao arquivo consolidado de melhores resultados
 """
 
 import pandas as pd

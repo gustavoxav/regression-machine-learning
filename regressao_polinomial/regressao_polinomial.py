@@ -3,11 +3,6 @@
 Regressao Polinomial (graus 2 e 3)
 Dataset: ds_salaries.csv
 Target: salary_in_usd
-
-Fluxo:
-  1. Roda graus 2 e 3 em todas as bases -> preenche CSV
-  2. Analisa o CSV e gera o plot SOMENTE do melhor resultado (maior R2)
-  3. Appenda o melhor resultado ao arquivo consolidado de melhores resultados
 """
 
 import pandas as pd
