@@ -17,6 +17,9 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from sklearn import metrics
 from sklearn.neural_network import MLPRegressor
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
+from sklearn.compose import TransformedTargetRegressor
 from sklearn.exceptions import ConvergenceWarning
 import numpy as np
 import os
@@ -98,18 +101,39 @@ for dados_dir in bases:
     y_treino = pd.read_csv(os.path.join(dados_dir, 'objetivo_treinamento.csv')).values.ravel()
     y_teste  = pd.read_csv(os.path.join(dados_dir, 'objetivo_teste.csv')).values.ravel()
 
+    # MLPRegressor e muito sensivel a escala dos features E do target.
+    # Sempre usamos Pipeline com StandardScaler nos features.
+    # Usamos TransformedTargetRegressor para escalar o target (salary_in_usd
+    # varia de ~2K a ~600K, o que causa instabilidade nos gradientes do Adam).
+
     for idx, cfg in enumerate(CONFIGURACOES_MLP, start=1):
         hl_str = '-'.join(str(x) for x in cfg['hidden_layer_sizes'])
         print(f'  [{idx}] hidden={hl_str}, act={cfg["activation"]}, alpha={cfg["alpha"]}...')
 
-        regressor = MLPRegressor(
+        mlp = MLPRegressor(
             hidden_layer_sizes=cfg['hidden_layer_sizes'],
             activation=cfg['activation'],
             alpha=cfg['alpha'],
-            max_iter=1000,
+            max_iter=2000,
+            learning_rate='adaptive',
+            learning_rate_init=0.001,
             early_stopping=True,
+            validation_fraction=0.15,
             random_state=0
         )
+
+        # Pipeline: escala features (sempre) + MLP
+        pipeline = Pipeline([
+            ('scaler', StandardScaler()),
+            ('mlp', mlp)
+        ])
+
+        # TransformedTargetRegressor: escala o target (y) automaticamente
+        regressor = TransformedTargetRegressor(
+            regressor=pipeline,
+            transformer=StandardScaler()
+        )
+
         regressor.fit(X_treino, y_treino)
         previsoes = regressor.predict(X_teste)
 

@@ -1,25 +1,25 @@
 preprocessamento,encoding,padronizacao,hidden_layer_sizes,activation,alpha,r2_score,mape,mae,mse,rmse
-com_dummy_com_std,one_hot,StandardScaler,"(32,)",relu,0.0001,-2.368237,100.0,116948.42,19451990406.42,139470.39
-com_dummy_com_std,one_hot,StandardScaler,"(64,)",relu,0.0001,-2.368208,100.0,116947.72,19451827408.45,139469.81
-com_dummy_com_std,one_hot,StandardScaler,"(128, 64)",relu,0.0001,-2.368009,99.99,116942.16,19450675047.77,139465.68
-com_dummy_com_std,one_hot,StandardScaler,"(64,)",tanh,0.0001,-2.368172,100.0,116947.35,19451616447.93,139469.05
-com_dummy_com_std,one_hot,StandardScaler,"(128, 64)",tanh,0.001,-2.368031,100.0,116944.94,19450802072.78,139466.13
-com_dummy_com_std,one_hot,StandardScaler,"(128, 64, 32)",relu,0.001,-2.368051,99.99,116942.95,19450917751.47,139466.55
-com_dummy_sem_std,one_hot,nenhuma,"(32,)",relu,0.0001,-0.016296,130.36,58025.33,5869238302.4,76610.95
-com_dummy_sem_std,one_hot,nenhuma,"(64,)",relu,0.0001,-0.011247,131.94,58007.79,5840079180.86,76420.41
-com_dummy_sem_std,one_hot,nenhuma,"(128, 64)",relu,0.0001,-0.017166,130.49,58086.22,5874263563.27,76643.74
-com_dummy_sem_std,one_hot,nenhuma,"(64,)",tanh,0.0001,-2.368089,99.99,116944.48,19451136942.8,139467.33
-com_dummy_sem_std,one_hot,nenhuma,"(128, 64)",tanh,0.001,-2.367842,99.98,116938.38,19449711440.41,139462.22
-com_dummy_sem_std,one_hot,nenhuma,"(128, 64, 32)",relu,0.001,0.004423,142.56,58497.31,5749581238.39,75825.99
-sem_dummy_com_std,label_encoder,StandardScaler,"(32,)",relu,0.0001,-2.368275,100.0,116949.07,19452210333.48,139471.18
-sem_dummy_com_std,label_encoder,StandardScaler,"(64,)",relu,0.0001,-2.368239,100.0,116948.39,19452007230.26,139470.45
-sem_dummy_com_std,label_encoder,StandardScaler,"(128, 64)",relu,0.0001,-2.368085,99.99,116944.61,19451115722.16,139467.26
-sem_dummy_com_std,label_encoder,StandardScaler,"(64,)",tanh,0.0001,-2.36822,100.0,116948.13,19451893296.33,139470.04
-sem_dummy_com_std,label_encoder,StandardScaler,"(128, 64)",tanh,0.001,-2.368084,100.0,116945.5,19451106870.53,139467.23
-sem_dummy_com_std,label_encoder,StandardScaler,"(128, 64, 32)",relu,0.001,-2.368131,99.99,116945.57,19451378017.52,139468.2
-sem_dummy_sem_std,label_encoder,nenhuma,"(32,)",relu,0.0001,-0.034308,121.6,57802.28,5973256202.15,77286.84
-sem_dummy_sem_std,label_encoder,nenhuma,"(64,)",relu,0.0001,0.010077,131.44,57150.99,5716929865.71,75610.38
-sem_dummy_sem_std,label_encoder,nenhuma,"(128, 64)",relu,0.0001,0.001119,131.02,57479.92,5768662314.67,75951.71
-sem_dummy_sem_std,label_encoder,nenhuma,"(64,)",tanh,0.0001,-2.36819,100.0,116946.98,19451721648.74,139469.43
-sem_dummy_sem_std,label_encoder,nenhuma,"(128, 64)",tanh,0.001,-2.367834,99.98,116938.19,19449665369.77,139462.06
-sem_dummy_sem_std,label_encoder,nenhuma,"(128, 64, 32)",relu,0.001,0.005646,132.83,57508.58,5742520708.57,75779.42
+com_dummy_com_std,one_hot,StandardScaler,"(32,)",relu,0.0001,-0.719586,142.11,71104.36,9930828264.45,99653.54
+com_dummy_com_std,one_hot,StandardScaler,"(64,)",relu,0.0001,0.364328,73.42,40574.22,3671083848.71,60589.47
+com_dummy_com_std,one_hot,StandardScaler,"(128, 64)",relu,0.0001,0.310582,86.88,42817.63,3981476208.19,63098.94
+com_dummy_com_std,one_hot,StandardScaler,"(64,)",tanh,0.0001,0.215096,123.47,47155.4,4532919026.15,67326.96
+com_dummy_com_std,one_hot,StandardScaler,"(128, 64)",tanh,0.001,0.411586,69.79,38988.6,3398167414.23,58293.8
+com_dummy_com_std,one_hot,StandardScaler,"(128, 64, 32)",relu,0.001,0.385643,73.19,38960.82,3547986504.99,59564.98
+com_dummy_sem_std,one_hot,nenhuma,"(32,)",relu,0.0001,-0.719586,142.11,71104.36,9930828264.45,99653.54
+com_dummy_sem_std,one_hot,nenhuma,"(64,)",relu,0.0001,0.364328,73.42,40574.22,3671083848.71,60589.47
+com_dummy_sem_std,one_hot,nenhuma,"(128, 64)",relu,0.0001,0.310582,86.88,42817.63,3981476208.19,63098.94
+com_dummy_sem_std,one_hot,nenhuma,"(64,)",tanh,0.0001,0.215096,123.47,47155.4,4532919026.15,67326.96
+com_dummy_sem_std,one_hot,nenhuma,"(128, 64)",tanh,0.001,0.411586,69.79,38988.6,3398167414.23,58293.8
+com_dummy_sem_std,one_hot,nenhuma,"(128, 64, 32)",relu,0.001,0.385643,73.19,38960.82,3547986504.99,59564.98
+sem_dummy_com_std,label_encoder,StandardScaler,"(32,)",relu,0.0001,0.365637,87.74,42470.11,3663523442.79,60527.05
+sem_dummy_com_std,label_encoder,StandardScaler,"(64,)",relu,0.0001,0.356901,77.57,39478.75,3713979449.86,60942.43
+sem_dummy_com_std,label_encoder,StandardScaler,"(128, 64)",relu,0.0001,0.334598,88.83,40770.92,3842782503.94,61990.18
+sem_dummy_com_std,label_encoder,StandardScaler,"(64,)",tanh,0.0001,0.392233,80.25,39465.91,3509928328.31,59244.65
+sem_dummy_com_std,label_encoder,StandardScaler,"(128, 64)",tanh,0.001,0.429097,78.06,37982.44,3297038494.48,57419.84
+sem_dummy_com_std,label_encoder,StandardScaler,"(128, 64, 32)",relu,0.001,0.356139,100.84,41833.79,3718381209.97,60978.53
+sem_dummy_sem_std,label_encoder,nenhuma,"(32,)",relu,0.0001,0.365637,87.74,42470.11,3663523442.79,60527.05
+sem_dummy_sem_std,label_encoder,nenhuma,"(64,)",relu,0.0001,0.356901,77.57,39478.75,3713979449.86,60942.43
+sem_dummy_sem_std,label_encoder,nenhuma,"(128, 64)",relu,0.0001,0.334598,88.83,40770.92,3842782503.94,61990.18
+sem_dummy_sem_std,label_encoder,nenhuma,"(64,)",tanh,0.0001,0.392233,80.25,39465.91,3509928328.31,59244.65
+sem_dummy_sem_std,label_encoder,nenhuma,"(128, 64)",tanh,0.001,0.429097,78.06,37982.44,3297038494.48,57419.84
+sem_dummy_sem_std,label_encoder,nenhuma,"(128, 64, 32)",relu,0.001,0.356139,100.84,41833.79,3718381209.97,60978.53

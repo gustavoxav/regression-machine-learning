@@ -16,6 +16,9 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from sklearn import metrics
 from sklearn.svm import SVR
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
+from sklearn.compose import TransformedTargetRegressor
 import numpy as np
 import os
 import json
@@ -94,11 +97,29 @@ for dados_dir in bases:
     y_treino = pd.read_csv(os.path.join(dados_dir, 'objetivo_treinamento.csv')).values.ravel()
     y_teste  = pd.read_csv(os.path.join(dados_dir, 'objetivo_teste.csv')).values.ravel()
 
+    # SVR e muito sensivel a escala dos features E do target.
+    # Sempre usamos Pipeline com StandardScaler nos features.
+    # Usamos TransformedTargetRegressor para escalar o target (salary_in_usd
+    # varia de ~2K a ~600K, o que melhora muito o desempenho do SVR).
+
     for idx, cfg in enumerate(CONFIGURACOES_SVM, start=1):
         cfg_str = ', '.join(f'{k}={v}' for k, v in cfg.items())
         print(f'  [{idx}] {cfg_str}...')
 
-        regressor = SVR(**cfg)
+        svr = SVR(**cfg)
+
+        # Pipeline: escala features (sempre) + SVR
+        pipeline = Pipeline([
+            ('scaler', StandardScaler()),
+            ('svr', svr)
+        ])
+
+        # TransformedTargetRegressor: escala o target (y) automaticamente
+        regressor = TransformedTargetRegressor(
+            regressor=pipeline,
+            transformer=StandardScaler()
+        )
+
         regressor.fit(X_treino, y_treino)
         previsoes = regressor.predict(X_teste)
 
@@ -114,11 +135,11 @@ for dados_dir in bases:
             'preprocessamento': NOME,
             'encoding':         encoding,
             'padronizacao':     padronizacao,
-            'kernel':           cfg.get('kernel', None),
-            'C':                cfg.get('C', None),
-            'epsilon':          cfg.get('epsilon', None),
-            'gamma':            cfg.get('gamma', None),
-            'degree':           cfg.get('degree', None),
+            'kernel':           cfg.get('kernel', ''),
+            'C':                cfg.get('C', ''),
+            'epsilon':          cfg.get('epsilon', ''),
+            'gamma':            cfg.get('gamma', ''),
+            'degree':           cfg.get('degree', ''),
             'r2_score':         round(r2,    6),
             'mape':             round(mape_, 2) if not np.isnan(mape_) else None,
             'mae':              round(mae_,  2),
