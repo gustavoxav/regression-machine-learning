@@ -163,7 +163,7 @@ print(f'[OK] Plot salvo em: {caminho_plot}')
 os.makedirs(os.path.dirname(caminho_consolidado), exist_ok=True)
 
 nova_linha = pd.DataFrame([{
-    'modelo':           'Regressao Linear',
+    'metodo':           'Regressao Linear',
     'preprocessamento': melhor_row['preprocessamento'],
     'encoding':         melhor_row['encoding'],
     'padronizacao':     melhor_row['padronizacao'],
@@ -179,7 +179,7 @@ nova_linha = pd.DataFrame([{
 if os.path.exists(caminho_consolidado):
     df_cons = pd.read_csv(caminho_consolidado)
     # Remove linha anterior do mesmo modelo se existir
-    df_cons = df_cons[df_cons['modelo'] != 'Regressao Linear']
+    df_cons = df_cons[df_cons['metodo'] != 'Regressao Linear']
     df_cons = pd.concat([df_cons, nova_linha], ignore_index=True)
 else:
     df_cons = nova_linha
