@@ -13,9 +13,9 @@ Gera as 4 variacoes padrao de pre-processamento:
 Melhorias aplicadas:
   - OrdinalEncoder para experience_level (EN=0, MI=1, SE=2, EX=3)
   - Agrupamento de job_title em 6 grupos (job_group)
+  - Agrupamento de paises em regioes geograficas (employee_region, company_region)
   - Feature binaria is_us_company
   - Sem remocao de outliers
-  - Sem log-transform do target
 """
 
 import pandas as pd
@@ -112,17 +112,45 @@ base['job_group'] = base['job_title'].apply(mapear_cargo)
 # --- 2. Feature binaria: empresa sediada nos EUA ---
 base['is_us_company'] = (base['company_location'] == 'US').astype(int)
 
+# --- 3. Agrupamento de paises em regioes geograficas ---
+# Reduz cardinalidade de ~50 paises para 7 regioes, evitando
+# features esparsas (one-hot) ou encodings arbitrarios (label).
+regioes = {
+    'North_America':     ['US', 'CA'],
+    'Latin_America':     ['MX', 'BR', 'AR', 'CL', 'CO', 'BO', 'HN', 'PR'],
+    'Western_Europe':    ['GB', 'DE', 'FR', 'ES', 'IT', 'NL', 'BE', 'AT', 'CH',
+                          'IE', 'LU', 'DK', 'SE', 'FI', 'NO', 'PT'],
+    'Eastern_Europe':    ['PL', 'RO', 'CZ', 'HU', 'HR', 'SI', 'RS', 'UA', 'EE',
+                          'LT', 'LV', 'BG', 'MT', 'MD', 'GR'],
+    'South_Asia':        ['IN', 'PK', 'LK', 'BD'],
+    'East_Asia_Pacific': ['JP', 'CN', 'KR', 'HK', 'SG', 'MY', 'TW', 'VN',
+                          'PH', 'TH', 'ID', 'AU', 'NZ'],
+    'Middle_East_Africa':['AE', 'IL', 'TR', 'NG', 'KE', 'DZ', 'IQ', 'IR',
+                          'SA', 'EG', 'RU'],
+}
+
+def mapear_regiao(pais):
+    for regiao, paises in regioes.items():
+        if pais in paises:
+            return regiao
+    return 'Other'
+
+base['employee_region'] = base['employee_residence'].apply(mapear_regiao)
+base['company_region'] = base['company_location'].apply(mapear_regiao)
+print(f'Regioes de residencia: {base["employee_region"].nunique()} categorias')
+print(f'Regioes de empresa:    {base["company_region"].nunique()} categorias')
+
 ################## Separando features e target ##################
 
 # Usa job_group no lugar de job_title (menor cardinalidade)
 cols_previsores = ['work_year', 'experience_level', 'employment_type',
-                   'job_group', 'employee_residence', 'remote_ratio',
-                   'company_location', 'company_size', 'is_us_company']
+                   'job_group', 'employee_region', 'remote_ratio',
+                   'company_region', 'company_size', 'is_us_company']
 
 cols_objetivo = ['salary_in_usd']
 
 colunas_categoricas_nominais = ['employment_type', 'job_group',
-                                'employee_residence', 'company_location',
+                                'employee_region', 'company_region',
                                 'company_size']
 
 ################## Definicao das variacoes ##################

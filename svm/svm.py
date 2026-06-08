@@ -4,10 +4,13 @@ Regressao com SVM (Support Vector Machine)
 Dataset: ds_salaries.csv
 Target: salary_in_usd
 
-Fluxo:
-  1. Roda todas as configuracoes em todas as bases -> preenche CSV
-  2. Analisa o CSV e gera plot SOMENTE do melhor resultado (maior R2)
-  3. Appenda o melhor resultado ao arquivo consolidado de melhores resultados
+Testa cada configuracao com duas estrategias de target transform:
+  - 'log': np.log1p(y) — comprime outliers, range ~8-13
+  - 'std_target': StandardScaler no target via TransformedTargetRegressor
+    — centraliza em media 0, variancia 1
+
+SVR e muito sensivel a escala dos features E do target.
+Features sao SEMPRE padronizados com StandardScaler via Pipeline.
 """
 
 import pandas as pd
@@ -62,6 +65,8 @@ CONFIGURACOES_SVM = [
     {'kernel': 'poly',   'C': 10.0,  'epsilon': 0.1, 'gamma': 'scale', 'degree': 2},
 ]
 
+TARGET_TRANSFORMS = ['log', 'std_target']
+
 ################## Detectar bases ##################
 
 bases = []
@@ -74,7 +79,7 @@ if not bases:
     raise FileNotFoundError('Nenhuma base encontrada em dados_processados/.')
 
 print(f'Bases encontradas: {len(bases)}')
-print(f'Configuracoes por base: {len(CONFIGURACOES_SVM)}')
+print(f'Configuracoes por base: {len(CONFIGURACOES_SVM)} x {len(TARGET_TRANSFORMS)} target transforms')
 
 ################## ETAPA 1: Rodar modelo e preencher CSV ##################
 
@@ -97,57 +102,60 @@ for dados_dir in bases:
     y_treino = pd.read_csv(os.path.join(dados_dir, 'objetivo_treinamento.csv')).values.ravel()
     y_teste  = pd.read_csv(os.path.join(dados_dir, 'objetivo_teste.csv')).values.ravel()
 
-    # SVR e muito sensivel a escala dos features E do target.
-    # Sempre usamos Pipeline com StandardScaler nos features.
-    # Usamos TransformedTargetRegressor para escalar o target (salary_in_usd
-    # varia de ~2K a ~600K, o que melhora muito o desempenho do SVR).
+    for target_tf in TARGET_TRANSFORMS:
+        for idx, cfg in enumerate(CONFIGURACOES_SVM, start=1):
+            cfg_str = ', '.join(f'{k}={v}' for k, v in cfg.items())
+            print(f'  [{target_tf}][{idx}] {cfg_str}...')
 
-    for idx, cfg in enumerate(CONFIGURACOES_SVM, start=1):
-        cfg_str = ', '.join(f'{k}={v}' for k, v in cfg.items())
-        print(f'  [{idx}] {cfg_str}...')
+            svr = SVR(**cfg)
 
-        svr = SVR(**cfg)
+            # Pipeline: escala features (sempre) + SVR
+            pipeline = Pipeline([
+                ('scaler', StandardScaler()),
+                ('svr', svr)
+            ])
 
-        # Pipeline: escala features (sempre) + SVR
-        pipeline = Pipeline([
-            ('scaler', StandardScaler()),
-            ('svr', svr)
-        ])
+            if target_tf == 'std_target':
+                # TransformedTargetRegressor: escala o target com StandardScaler
+                regressor = TransformedTargetRegressor(
+                    regressor=pipeline,
+                    transformer=StandardScaler()
+                )
+                regressor.fit(X_treino, y_treino)
+                previsoes = regressor.predict(X_teste)
+            else:
+                # Log transform
+                y_treino_log = np.log1p(y_treino)
+                pipeline.fit(X_treino, y_treino_log)
+                previsoes_log = pipeline.predict(X_teste)
+                previsoes = np.expm1(previsoes_log)
 
-        # TransformedTargetRegressor: escala o target (y) automaticamente
-        regressor = TransformedTargetRegressor(
-            regressor=pipeline,
-            transformer=StandardScaler()
-        )
+            r2   = metrics.r2_score(y_teste, previsoes)
+            mae_ = metrics.mean_absolute_error(y_teste, previsoes)
+            mse_ = metrics.mean_squared_error(y_teste, previsoes)
+            rmse_= np.sqrt(mse_)
+            mape_= mape_calc(y_teste, previsoes)
 
-        regressor.fit(X_treino, y_treino)
-        previsoes = regressor.predict(X_teste)
+            print(f'    R2={r2:.4f} | MAPE={mape_:.2f}% | MAE={mae_:.0f} | RMSE={rmse_:.0f}')
 
-        r2   = regressor.score(X_teste, y_teste)
-        mae_ = metrics.mean_absolute_error(y_teste, previsoes)
-        mse_ = metrics.mean_squared_error(y_teste, previsoes)
-        rmse_= np.sqrt(mse_)
-        mape_= mape_calc(y_teste, previsoes)
-
-        print(f'    R2={r2:.4f} | MAPE={mape_:.2f}% | MAE={mae_:.0f} | RMSE={rmse_:.0f}')
-
-        todos_resultados.append({
-            'preprocessamento': NOME,
-            'encoding':         encoding,
-            'padronizacao':     padronizacao,
-            'kernel':           cfg.get('kernel', ''),
-            'C':                cfg.get('C', ''),
-            'epsilon':          cfg.get('epsilon', ''),
-            'gamma':            cfg.get('gamma', ''),
-            'degree':           cfg.get('degree', ''),
-            'r2_score':         round(r2,    6),
-            'mape':             round(mape_, 2) if not np.isnan(mape_) else None,
-            'mae':              round(mae_,  2),
-            'mse':              round(mse_,  2),
-            'rmse':             round(rmse_, 2),
-            '_previsoes': previsoes,
-            '_y_teste':   y_teste,
-        })
+            todos_resultados.append({
+                'preprocessamento': NOME,
+                'encoding':         encoding,
+                'padronizacao':     padronizacao,
+                'target_transform': target_tf,
+                'kernel':           cfg.get('kernel', ''),
+                'C':                cfg.get('C', ''),
+                'epsilon':          cfg.get('epsilon', ''),
+                'gamma':            cfg.get('gamma', ''),
+                'degree':           cfg.get('degree', ''),
+                'r2_score':         round(r2,    6),
+                'mape':             round(mape_, 2) if not np.isnan(mape_) else None,
+                'mae':              round(mae_,  2),
+                'mse':              round(mse_,  2),
+                'rmse':             round(rmse_, 2),
+                '_previsoes': previsoes,
+                '_y_teste':   y_teste,
+            })
 
 # Salva CSV sem colunas internas
 df_resultados = pd.DataFrame([{k: v for k, v in r.items() if not k.startswith('_')}
@@ -162,8 +170,9 @@ melhor_row  = df_resultados.loc[melhor_idx]
 melhor_full = todos_resultados[melhor_idx]
 
 nome_melhor = melhor_full['preprocessamento']
+tf_melhor   = melhor_full['target_transform']
 cfg_melhor  = (f"kernel={melhor_full['kernel']}, C={melhor_full['C']}, "
-               f"epsilon={melhor_full['epsilon']}")
+               f"epsilon={melhor_full['epsilon']}, target={tf_melhor}")
 print(f'\n[MELHOR] {nome_melhor} | {cfg_melhor} | R2={melhor_row["r2_score"]:.4f}')
 
 previsoes_melhor = melhor_full['_previsoes']
@@ -183,7 +192,7 @@ ax.set_title('Real vs Previsto')
 ax.legend()
 
 plt.tight_layout()
-caminho_plot = os.path.join(graficos_dir, f'melhor_{nome_melhor}_svm.png')
+caminho_plot = os.path.join(graficos_dir, f'melhor_{nome_melhor}_{tf_melhor}_svm.png')
 plt.savefig(caminho_plot, dpi=150, bbox_inches='tight')
 plt.close()
 print(f'[OK] Plot salvo em: {caminho_plot}')
@@ -220,6 +229,5 @@ print(f'[OK] Melhor resultado adicionado em: {caminho_consolidado}')
 print(f'\n{"="*60}')
 print(f'[OK] SVM concluido!')
 print(f'  Total de testes: {len(todos_resultados)}')
-print(f'  Melhor R2: {melhor_row["r2_score"]:.4f} ({nome_melhor})')
+print(f'  Melhor R2: {melhor_row["r2_score"]:.4f} ({nome_melhor}, {tf_melhor})')
 print(f'{"="*60}')
-print(f'\n{df_resultados.to_string(index=False)}')

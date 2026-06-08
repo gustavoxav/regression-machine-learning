@@ -4,10 +4,12 @@ Regressao com Rede Neural (MLPRegressor)
 Dataset: ds_salaries.csv
 Target: salary_in_usd
 
-Fluxo:
-  1. Roda todas as configuracoes em todas as bases -> preenche CSV
-  2. Analisa o CSV e gera plot SOMENTE do melhor resultado (maior R2)
-  3. Appenda o melhor resultado ao arquivo consolidado de melhores resultados
+Testa cada configuracao com duas estrategias de target transform:
+  - 'log': np.log1p(y) — comprime outliers
+  - 'std_target': StandardScaler no target via TransformedTargetRegressor
+    — centraliza em media 0, variancia 1, ideal para gradientes do Adam
+
+Redes neurais sao MUITO sensiveis a escala do target.
 """
 
 import warnings
@@ -66,6 +68,11 @@ CONFIGURACOES_MLP = [
     {'hidden_layer_sizes': (128, 64, 32),'activation': 'relu', 'alpha': 0.001},
 ]
 
+# Estrategias de transformacao do target
+# 'log': log1p(y) — range ~8-13, bom para outliers
+# 'std_target': StandardScaler(y) — media 0, std 1, ideal para Adam optimizer
+TARGET_TRANSFORMS = ['log', 'std_target']
+
 ################## Detectar bases ##################
 
 bases = []
@@ -78,7 +85,7 @@ if not bases:
     raise FileNotFoundError('Nenhuma base encontrada em dados_processados/.')
 
 print(f'Bases encontradas: {len(bases)}')
-print(f'Configuracoes por base: {len(CONFIGURACOES_MLP)}')
+print(f'Configuracoes por base: {len(CONFIGURACOES_MLP)} x {len(TARGET_TRANSFORMS)} target transforms')
 
 ################## ETAPA 1: Rodar modelo e preencher CSV ##################
 
@@ -101,65 +108,69 @@ for dados_dir in bases:
     y_treino = pd.read_csv(os.path.join(dados_dir, 'objetivo_treinamento.csv')).values.ravel()
     y_teste  = pd.read_csv(os.path.join(dados_dir, 'objetivo_teste.csv')).values.ravel()
 
-    # MLPRegressor e muito sensivel a escala dos features E do target.
-    # Sempre usamos Pipeline com StandardScaler nos features.
-    # Usamos TransformedTargetRegressor para escalar o target (salary_in_usd
-    # varia de ~2K a ~600K, o que causa instabilidade nos gradientes do Adam).
+    for target_tf in TARGET_TRANSFORMS:
+        for idx, cfg in enumerate(CONFIGURACOES_MLP, start=1):
+            hl_str = '-'.join(str(x) for x in cfg['hidden_layer_sizes'])
+            print(f'  [{target_tf}][{idx}] hidden={hl_str}, act={cfg["activation"]}, alpha={cfg["alpha"]}...')
 
-    for idx, cfg in enumerate(CONFIGURACOES_MLP, start=1):
-        hl_str = '-'.join(str(x) for x in cfg['hidden_layer_sizes'])
-        print(f'  [{idx}] hidden={hl_str}, act={cfg["activation"]}, alpha={cfg["alpha"]}...')
+            mlp = MLPRegressor(
+                hidden_layer_sizes=cfg['hidden_layer_sizes'],
+                activation=cfg['activation'],
+                alpha=cfg['alpha'],
+                max_iter=2000,
+                learning_rate='adaptive',
+                learning_rate_init=0.001,
+                early_stopping=True,
+                validation_fraction=0.15,
+                random_state=0
+            )
 
-        mlp = MLPRegressor(
-            hidden_layer_sizes=cfg['hidden_layer_sizes'],
-            activation=cfg['activation'],
-            alpha=cfg['alpha'],
-            max_iter=2000,
-            learning_rate='adaptive',
-            learning_rate_init=0.001,
-            early_stopping=True,
-            validation_fraction=0.15,
-            random_state=0
-        )
+            # Pipeline: escala features (sempre) + MLP
+            pipeline = Pipeline([
+                ('scaler', StandardScaler()),
+                ('mlp', mlp)
+            ])
 
-        # Pipeline: escala features (sempre) + MLP
-        pipeline = Pipeline([
-            ('scaler', StandardScaler()),
-            ('mlp', mlp)
-        ])
+            if target_tf == 'std_target':
+                # TransformedTargetRegressor: escala o target com StandardScaler
+                # Target fica com media 0, variancia 1 -> ideal para gradientes
+                regressor = TransformedTargetRegressor(
+                    regressor=pipeline,
+                    transformer=StandardScaler()
+                )
+                regressor.fit(X_treino, y_treino)
+                previsoes = regressor.predict(X_teste)
+            else:
+                # Log transform: target fica em range ~8-13
+                y_treino_log = np.log1p(y_treino)
+                pipeline.fit(X_treino, y_treino_log)
+                previsoes_log = pipeline.predict(X_teste)
+                previsoes = np.expm1(previsoes_log)
 
-        # TransformedTargetRegressor: escala o target (y) automaticamente
-        regressor = TransformedTargetRegressor(
-            regressor=pipeline,
-            transformer=StandardScaler()
-        )
+            r2   = metrics.r2_score(y_teste, previsoes)
+            mae_ = metrics.mean_absolute_error(y_teste, previsoes)
+            mse_ = metrics.mean_squared_error(y_teste, previsoes)
+            rmse_= np.sqrt(mse_)
+            mape_= mape_calc(y_teste, previsoes)
 
-        regressor.fit(X_treino, y_treino)
-        previsoes = regressor.predict(X_teste)
+            print(f'    R2={r2:.4f} | MAPE={mape_:.2f}% | MAE={mae_:.0f} | RMSE={rmse_:.0f}')
 
-        r2   = regressor.score(X_teste, y_teste)
-        mae_ = metrics.mean_absolute_error(y_teste, previsoes)
-        mse_ = metrics.mean_squared_error(y_teste, previsoes)
-        rmse_= np.sqrt(mse_)
-        mape_= mape_calc(y_teste, previsoes)
-
-        print(f'    R2={r2:.4f} | MAPE={mape_:.2f}% | MAE={mae_:.0f} | RMSE={rmse_:.0f}')
-
-        todos_resultados.append({
-            'preprocessamento':   NOME,
-            'encoding':           encoding,
-            'padronizacao':       padronizacao,
-            'hidden_layer_sizes': str(cfg['hidden_layer_sizes']),
-            'activation':         cfg['activation'],
-            'alpha':              cfg['alpha'],
-            'r2_score':           round(r2,    6),
-            'mape':               round(mape_, 2) if not np.isnan(mape_) else None,
-            'mae':                round(mae_,  2),
-            'mse':                round(mse_,  2),
-            'rmse':               round(rmse_, 2),
-            '_previsoes': previsoes,
-            '_y_teste':   y_teste,
-        })
+            todos_resultados.append({
+                'preprocessamento':   NOME,
+                'encoding':           encoding,
+                'padronizacao':       padronizacao,
+                'target_transform':   target_tf,
+                'hidden_layer_sizes': str(cfg['hidden_layer_sizes']),
+                'activation':         cfg['activation'],
+                'alpha':              cfg['alpha'],
+                'r2_score':           round(r2,    6),
+                'mape':               round(mape_, 2) if not np.isnan(mape_) else None,
+                'mae':                round(mae_,  2),
+                'mse':                round(mse_,  2),
+                'rmse':               round(rmse_, 2),
+                '_previsoes': previsoes,
+                '_y_teste':   y_teste,
+            })
 
 # Salva CSV sem colunas internas
 df_resultados = pd.DataFrame([{k: v for k, v in r.items() if not k.startswith('_')}
@@ -174,8 +185,10 @@ melhor_row  = df_resultados.loc[melhor_idx]
 melhor_full = todos_resultados[melhor_idx]
 
 nome_melhor = melhor_full['preprocessamento']
+tf_melhor   = melhor_full['target_transform']
 cfg_melhor  = (f"hidden={melhor_full['hidden_layer_sizes']}, "
-               f"act={melhor_full['activation']}, alpha={melhor_full['alpha']}")
+               f"act={melhor_full['activation']}, alpha={melhor_full['alpha']}, "
+               f"target={tf_melhor}")
 print(f'\n[MELHOR] {nome_melhor} | {cfg_melhor} | R2={melhor_row["r2_score"]:.4f}')
 
 previsoes_melhor = melhor_full['_previsoes']
@@ -195,7 +208,7 @@ ax.set_title('Real vs Previsto')
 ax.legend()
 
 plt.tight_layout()
-caminho_plot = os.path.join(graficos_dir, f'melhor_{nome_melhor}_nn.png')
+caminho_plot = os.path.join(graficos_dir, f'melhor_{nome_melhor}_{tf_melhor}_nn.png')
 plt.savefig(caminho_plot, dpi=150, bbox_inches='tight')
 plt.close()
 print(f'[OK] Plot salvo em: {caminho_plot}')
@@ -232,6 +245,5 @@ print(f'[OK] Melhor resultado adicionado em: {caminho_consolidado}')
 print(f'\n{"="*60}')
 print(f'[OK] Rede Neural concluida!')
 print(f'  Total de testes: {len(todos_resultados)}')
-print(f'  Melhor R2: {melhor_row["r2_score"]:.4f} ({nome_melhor})')
+print(f'  Melhor R2: {melhor_row["r2_score"]:.4f} ({nome_melhor}, {tf_melhor})')
 print(f'{"="*60}')
-print(f'\n{df_resultados.to_string(index=False)}')

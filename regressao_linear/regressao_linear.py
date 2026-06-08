@@ -2,7 +2,11 @@
 """
 Regressao Linear Multipla
 Dataset: ds_salaries.csv
-Target: salary_in_usd
+Target: salary_in_usd (log-transformado para treinamento)
+
+Melhorias:
+  - Log transform do target (np.log1p) para reduzir impacto de outliers
+  - Metricas computadas na escala original (USD) e log
 """
 
 import pandas as pd
@@ -73,35 +77,48 @@ for dados_dir in bases:
     y_treino = pd.read_csv(os.path.join(dados_dir, 'objetivo_treinamento.csv'))
     y_teste  = pd.read_csv(os.path.join(dados_dir, 'objetivo_teste.csv'))
 
+    # Log transform do target
+    y_treino_log = np.log1p(y_treino.values.ravel())
+    y_teste_log  = np.log1p(y_teste.values.ravel())
+    y_teste_orig = y_teste.values.ravel()
+
     regressor = LinearRegression()
-    regressor.fit(X_treino, y_treino)
-    previsoes = regressor.predict(X_teste)
+    regressor.fit(X_treino, y_treino_log)
+    previsoes_log = regressor.predict(X_teste)
 
-    r2   = regressor.score(X_teste, y_teste)
-    mae_ = metrics.mean_absolute_error(y_teste, previsoes)
-    mse_ = metrics.mean_squared_error(y_teste, previsoes)
+    # Metricas no espaco log
+    r2_log = metrics.r2_score(y_teste_log, previsoes_log)
+
+    # Converter para escala original
+    previsoes_orig = np.expm1(previsoes_log)
+
+    # Metricas na escala original (USD)
+    r2_orig = metrics.r2_score(y_teste_orig, previsoes_orig)
+    mae_ = metrics.mean_absolute_error(y_teste_orig, previsoes_orig)
+    mse_ = metrics.mean_squared_error(y_teste_orig, previsoes_orig)
     rmse_= np.sqrt(mse_)
-    mape_= mape(y_teste.values, previsoes)
+    mape_= mape(y_teste_orig, previsoes_orig)
 
-    print(f'  R2:   {r2:.6f}')
-    print(f'  MAPE: {mape_:.2f}%')
-    print(f'  MAE:  {mae_:.2f}')
-    print(f'  MSE:  {mse_:.2f}')
-    print(f'  RMSE: {rmse_:.2f}')
+    print(f'  R2:     {r2_orig:.6f}')
+    print(f'  R2_log: {r2_log:.6f}')
+    print(f'  MAPE:   {mape_:.2f}%')
+    print(f'  MAE:    {mae_:.2f}')
+    print(f'  RMSE:   {rmse_:.2f}')
 
     todos_resultados.append({
         'preprocessamento': NOME,
         'encoding':         encoding,
         'padronizacao':     padronizacao,
-        'r2_score':         round(r2,    6),
+        'r2_score':         round(r2_orig, 6),
+        'r2_log':           round(r2_log,  6),
         'mape':             round(mape_, 2),
         'mae':              round(mae_,  2),
         'mse':              round(mse_,  2),
         'rmse':             round(rmse_, 2),
         # armazenar para o plot (nao vai para o CSV)
         '_dados_dir': dados_dir,
-        '_previsoes': previsoes,
-        '_y_teste':   y_teste,
+        '_previsoes': previsoes_orig,
+        '_y_teste':   y_teste_orig,
     })
 
 # Salva CSV sem as colunas internas (_)
@@ -116,7 +133,7 @@ melhor_idx  = df_resultados['r2_score'].idxmax()
 melhor_row  = df_resultados.loc[melhor_idx]
 melhor_full = todos_resultados[melhor_idx]
 
-print(f'\n[MELHOR] {melhor_full["preprocessamento"]} | R2={melhor_row["r2_score"]:.4f}')
+print(f'\n[MELHOR] {melhor_full["preprocessamento"]} | R2={melhor_row["r2_score"]:.4f} | R2_log={melhor_row["r2_log"]:.4f}')
 
 previsoes_melhor = melhor_full['_previsoes']
 y_teste_melhor   = melhor_full['_y_teste']
@@ -127,8 +144,8 @@ fig, ax = plt.subplots(figsize=(8, 6))
 fig.suptitle(f'Regressao Linear - Melhor Resultado\n{nome_melhor} | R2={melhor_row["r2_score"]:.4f}',
              fontsize=13, fontweight='bold')
 
-ax.scatter(y_teste_melhor.values, previsoes_melhor, alpha=0.6, color='steelblue', edgecolors='white', linewidth=0.4)
-lim = [y_teste_melhor.values.min(), y_teste_melhor.values.max()]
+ax.scatter(y_teste_melhor, previsoes_melhor, alpha=0.6, color='steelblue', edgecolors='white', linewidth=0.4)
+lim = [y_teste_melhor.min(), y_teste_melhor.max()]
 ax.plot(lim, lim, color='red', linestyle='--', linewidth=1.5, label='Ideal')
 ax.set_xlabel('Salario Real (USD)')
 ax.set_ylabel('Salario Previsto (USD)')
@@ -152,6 +169,7 @@ nova_linha = pd.DataFrame([{
     'padronizacao':     melhor_row['padronizacao'],
     'configuracao':     'N/A',
     'r2_score':         melhor_row['r2_score'],
+    'r2_log':           melhor_row['r2_log'],
     'mape':             melhor_row['mape'],
     'mae':              melhor_row['mae'],
     'mse':              melhor_row['mse'],
@@ -175,5 +193,6 @@ print(f'\n{"="*60}')
 print(f'[OK] Regressao Linear concluida!')
 print(f'  Total de bases testadas: {len(bases)}')
 print(f'  Melhor R2: {melhor_row["r2_score"]:.4f} ({nome_melhor})')
+print(f'  Melhor R2_log: {melhor_row["r2_log"]:.4f}')
 print(f'{"="*60}')
 print(f'\n{df_resultados.to_string(index=False)}')

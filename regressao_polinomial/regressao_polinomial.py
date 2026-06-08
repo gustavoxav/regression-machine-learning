@@ -3,6 +3,10 @@
 Regressao Polinomial (graus 2 e 3)
 Dataset: ds_salaries.csv
 Target: salary_in_usd
+
+Testa cada configuracao com e sem log transform no target.
+Polinomial tende a overfittar em alta dimensionalidade, entao
+o target na escala original pode funcionar melhor em alguns casos.
 """
 
 import pandas as pd
@@ -43,6 +47,7 @@ if not os.path.exists(dados_dir_raiz):
 ################## Configuracao ##################
 
 GRAUS = [2, 3]
+TARGET_TRANSFORMS = ['nenhum', 'log']
 
 ################## Detectar bases ##################
 
@@ -57,6 +62,7 @@ if not bases:
 
 print(f'Bases encontradas: {len(bases)}')
 print(f'Graus a testar: {GRAUS}')
+print(f'Target transforms: {TARGET_TRANSFORMS}')
 
 ################## ETAPA 1: Rodar modelo e preencher CSV ##################
 
@@ -79,46 +85,67 @@ for dados_dir in bases:
     y_treino = pd.read_csv(os.path.join(dados_dir, 'objetivo_treinamento.csv'))
     y_teste  = pd.read_csv(os.path.join(dados_dir, 'objetivo_teste.csv'))
 
-    for grau in GRAUS:
-        print(f'\n  Grau {grau}...')
+    y_treino_orig = y_treino.values.ravel()
+    y_teste_orig  = y_teste.values.ravel()
 
-        try:
-            poly = PolynomialFeatures(degree=grau)
-            X_treino_poly = poly.fit_transform(X_treino)
-            X_teste_poly  = poly.transform(X_teste)
-        except MemoryError:
-            print(f'  [AVISO] MemoryError no grau {grau} para {NOME}. Pulando.')
-            break
+    for target_tf in TARGET_TRANSFORMS:
+        if target_tf == 'log':
+            y_treino_t = np.log1p(y_treino_orig)
+        else:
+            y_treino_t = y_treino_orig.copy()
 
-        regressor = LinearRegression()
-        regressor.fit(X_treino_poly, y_treino)
-        previsoes = regressor.predict(X_teste_poly)
+        for grau in GRAUS:
+            print(f'\n  [{target_tf}] Grau {grau}...')
 
-        r2   = regressor.score(X_teste_poly, y_teste)
-        mae_ = metrics.mean_absolute_error(y_teste, previsoes)
-        mse_ = metrics.mean_squared_error(y_teste, previsoes)
-        rmse_= np.sqrt(mse_)
-        mape_= mape(y_teste.values, previsoes)
+            try:
+                poly = PolynomialFeatures(degree=grau)
+                X_treino_poly = poly.fit_transform(X_treino)
+                X_teste_poly  = poly.transform(X_teste)
+            except MemoryError:
+                print(f'  [AVISO] MemoryError no grau {grau} para {NOME}. Pulando.')
+                break
 
-        print(f'  R2:   {r2:.6f}')
-        print(f'  MAPE: {mape_:.2f}%')
-        print(f'  MAE:  {mae_:.2f}')
-        print(f'  MSE:  {mse_:.2f}')
-        print(f'  RMSE: {rmse_:.2f}')
+            regressor = LinearRegression()
+            regressor.fit(X_treino_poly, y_treino_t)
+            previsoes_raw = regressor.predict(X_teste_poly)
 
-        todos_resultados.append({
-            'preprocessamento': NOME,
-            'encoding':         encoding,
-            'padronizacao':     padronizacao,
-            'grau':             grau,
-            'r2_score':         round(r2,    6),
-            'mape':             round(mape_, 2),
-            'mae':              round(mae_,  2),
-            'mse':              round(mse_,  2),
-            'rmse':             round(rmse_, 2),
-            '_previsoes': previsoes,
-            '_y_teste':   y_teste,
-        })
+            if target_tf == 'log':
+                # Clipping para evitar overflow em expm1
+                previsoes_raw = np.clip(previsoes_raw, -50, 50)
+                previsoes_orig = np.expm1(previsoes_raw)
+            else:
+                previsoes_orig = previsoes_raw
+
+            if np.any(~np.isfinite(previsoes_orig)):
+                r2   = float('-inf')
+                mae_ = float('inf')
+                mse_ = float('inf')
+                rmse_ = float('inf')
+                mape_ = float('inf')
+            else:
+                r2   = metrics.r2_score(y_teste_orig, previsoes_orig)
+                mae_ = metrics.mean_absolute_error(y_teste_orig, previsoes_orig)
+                mse_ = metrics.mean_squared_error(y_teste_orig, previsoes_orig)
+                rmse_= np.sqrt(mse_)
+                mape_= mape(y_teste_orig, previsoes_orig)
+
+            print(f'  R2={r2:.6f} | MAPE={mape_:.2f}%')
+            print(f'  MAE:  {mae_:.2f} | RMSE: {rmse_:.2f}')
+
+            todos_resultados.append({
+                'preprocessamento': NOME,
+                'encoding':         encoding,
+                'padronizacao':     padronizacao,
+                'target_transform': target_tf,
+                'grau':             grau,
+                'r2_score':         round(r2, 6) if np.isfinite(r2) else -999,
+                'mape':             round(mape_, 2) if np.isfinite(mape_) else 999,
+                'mae':              round(mae_, 2) if np.isfinite(mae_) else 999,
+                'mse':              round(mse_, 2) if np.isfinite(mse_) else 999,
+                'rmse':             round(rmse_, 2) if np.isfinite(rmse_) else 999,
+                '_previsoes': previsoes_orig,
+                '_y_teste':   y_teste_orig,
+            })
 
 # Salva CSV sem colunas internas
 df_resultados = pd.DataFrame([{k: v for k, v in r.items() if not k.startswith('_')}
@@ -134,24 +161,25 @@ melhor_full = todos_resultados[melhor_idx]
 
 nome_melhor = melhor_full['preprocessamento']
 grau_melhor = melhor_full['grau']
-print(f'\n[MELHOR] {nome_melhor} grau={grau_melhor} | R2={melhor_row["r2_score"]:.4f}')
+tf_melhor   = melhor_full['target_transform']
+print(f'\n[MELHOR] {nome_melhor} grau={grau_melhor} target={tf_melhor} | R2={melhor_row["r2_score"]:.4f}')
 
 previsoes_melhor = melhor_full['_previsoes']
 y_teste_melhor   = melhor_full['_y_teste']
 
 fig, axes = plt.subplots(1, 2, figsize=(14, 6))
-fig.suptitle(f'Regressao Polinomial — Melhor Resultado\n{nome_melhor} grau={grau_melhor} | R²={melhor_row["r2_score"]:.4f}',
+fig.suptitle(f'Regressao Polinomial — Melhor Resultado\n{nome_melhor} grau={grau_melhor} target={tf_melhor} | R²={melhor_row["r2_score"]:.4f}',
              fontsize=13, fontweight='bold')
 
-axes[0].scatter(y_teste_melhor.values, previsoes_melhor, alpha=0.6, color='steelblue', edgecolors='white', linewidth=0.4)
-lim = [y_teste_melhor.values.min(), y_teste_melhor.values.max()]
+axes[0].scatter(y_teste_melhor, previsoes_melhor, alpha=0.6, color='steelblue', edgecolors='white', linewidth=0.4)
+lim = [y_teste_melhor.min(), y_teste_melhor.max()]
 axes[0].plot(lim, lim, color='red', linestyle='--', linewidth=1.5, label='Ideal')
 axes[0].set_xlabel('Salario Real (USD)')
 axes[0].set_ylabel('Salario Previsto (USD)')
 axes[0].set_title('Real vs Previsto')
 axes[0].legend()
 
-residuos = y_teste_melhor.values.flatten() - previsoes_melhor.flatten()
+residuos = y_teste_melhor - previsoes_melhor
 axes[1].scatter(previsoes_melhor, residuos, alpha=0.6, color='darkorange', edgecolors='white', linewidth=0.4)
 axes[1].axhline(y=0, color='red', linestyle='--', linewidth=1.5)
 axes[1].set_xlabel('Valores Previstos (USD)')
@@ -159,7 +187,7 @@ axes[1].set_ylabel('Residuos')
 axes[1].set_title('Grafico de Residuos')
 
 plt.tight_layout()
-caminho_plot = os.path.join(graficos_dir, f'melhor_{nome_melhor}_grau{grau_melhor}.png')
+caminho_plot = os.path.join(graficos_dir, f'melhor_{nome_melhor}_grau{grau_melhor}_{tf_melhor}.png')
 plt.savefig(caminho_plot, dpi=150, bbox_inches='tight')
 plt.close()
 print(f'[OK] Plot salvo em: {caminho_plot}')
@@ -173,7 +201,7 @@ nova_linha = pd.DataFrame([{
     'preprocessamento': melhor_row['preprocessamento'],
     'encoding':         melhor_row['encoding'],
     'padronizacao':     melhor_row['padronizacao'],
-    'configuracao':     f'grau={grau_melhor}',
+    'configuracao':     f'grau={grau_melhor}, target={tf_melhor}',
     'r2_score':         melhor_row['r2_score'],
     'mape':             melhor_row['mape'],
     'mae':              melhor_row['mae'],
@@ -196,6 +224,5 @@ print(f'[OK] Melhor resultado adicionado em: {caminho_consolidado}')
 print(f'\n{"="*60}')
 print(f'[OK] Regressao Polinomial concluida!')
 print(f'  Total de testes: {len(todos_resultados)}')
-print(f'  Melhor R2: {melhor_row["r2_score"]:.4f} ({nome_melhor}, grau={grau_melhor})')
+print(f'  Melhor R2: {melhor_row["r2_score"]:.4f} ({nome_melhor}, grau={grau_melhor}, target={tf_melhor})')
 print(f'{"="*60}')
-print(f'\n{df_resultados.to_string(index=False)}')

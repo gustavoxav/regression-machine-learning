@@ -1,7 +1,7 @@
-modelo,preprocessamento,encoding,padronizacao,configuracao,r2_score,mape,mae,mse,rmse
-Regressao Polinomial,com_dummy_com_std,one_hot,StandardScaler,grau=2,-0.337349,154.98,60731.99,7723361218.59,87882.66
-Regressao Linear,com_dummy_sem_std,one_hot,nenhuma,,0.454865,72.41,39763.24,3148222598.38,56109.02
-Arvore de Decisao,sem_dummy_com_std,label_encoder,StandardScaler,max_depth=3,0.514207,64.93,37020.87,2805518202.25,52967.14
-Random Forest,com_dummy_sem_std,one_hot,nenhuma,"n_estimators=200, max_depth=10",0.450498,77.06,38393.51,3173444478.1,56333.33
-SVM,com_dummy_com_std,one_hot,StandardScaler,"kernel=linear, C=1.0, epsilon=0.1",0.439362,65.73,37633.87,3237753539.64,56901.26
-Rede Neural,sem_dummy_com_std,label_encoder,StandardScaler,"hidden=(128, 64), act=tanh, alpha=0.001",0.429097,78.06,37982.44,3297038494.48,57419.84
+metodo,preprocessamento,encoding,parametros,r2_score,r2_log,mape,mae,mse,rmse
+Regressao Linear,com_dummy_sem_std,one_hot,N/A,0.510949,0.575756,53.46,36206.03,2824330827.71,53144.43
+Regressao Polinomial,com_dummy_com_std,one_hot,"target_transform=nenhum, grau=2",-0.259788,,112.55,54122.11,7275432495.8,85296.15
+Arvore de Decisao,com_dummy_com_std,one_hot,"target_transform=nenhum, max_depth=3",0.4836,,66.06,38016.1,2982276160.54,54610.22
+Random Forest,sem_dummy_com_std,label_encoder,"target_transform=log, n_estimators=100, max_depth=10.0, max_features=sqrt",0.428977,,63.39,37945.33,3297730413.02,57425.87
+SVM,com_dummy_com_std,one_hot,"target_transform=log, kernel=linear, C=10.0, epsilon=0.1, gamma=nan, degree=nan",0.496533,,57.79,35989.95,2907586900.21,53922.04
+Rede Neural,com_dummy_com_std,one_hot,"target_transform=std_target, hidden_layer_sizes=(32,), activation=relu, alpha=0.0001",0.456055,,72.55,40630.54,3141352888.32,56047.77
