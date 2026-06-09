@@ -1,0 +1,122 @@
+[
+    {
+        "modelo": "Regressao Linear",
+        "base": "com_dummy_sem_std",
+        "target_transform": "log",
+        "r2_media": 0.467,
+        "r2_std": 0.0717,
+        "mae_media": 32835.57,
+        "mae_std": 3428.04,
+        "rmse_media": 52199.96,
+        "rmse_std": 7906.98,
+        "mape_media": 43.14,
+        "mape_std": 9.16,
+        "r2_por_fold": [
+            0.4364,
+            0.508,
+            0.5832,
+            0.4319,
+            0.3755
+        ]
+    },
+    {
+        "modelo": "Regressao Polinomial",
+        "base": "com_dummy_sem_std",
+        "target_transform": "nenhum",
+        "r2_media": -0.0378,
+        "r2_std": 0.3315,
+        "mae_media": 46941.47,
+        "mae_std": 6181.81,
+        "rmse_media": 71400.42,
+        "rmse_std": 8382.2,
+        "mape_media": 86.72,
+        "mape_std": 23.23,
+        "r2_por_fold": [
+            0.1956,
+            0.1787,
+            0.0547,
+            -0.6915,
+            0.0732
+        ]
+    },
+    {
+        "modelo": "Arvore de Decisao",
+        "base": "com_dummy_sem_std",
+        "target_transform": "nenhum",
+        "r2_media": 0.3927,
+        "r2_std": 0.0917,
+        "mae_media": 37406.07,
+        "mae_std": 3380.92,
+        "rmse_media": 55616.52,
+        "rmse_std": 8335.72,
+        "mape_media": 59.64,
+        "mape_std": 9.98,
+        "r2_por_fold": [
+            0.3616,
+            0.3962,
+            0.5659,
+            0.3346,
+            0.3052
+        ]
+    },
+    {
+        "modelo": "Random Forest",
+        "base": "sem_dummy_sem_std",
+        "target_transform": "log",
+        "r2_media": 0.4321,
+        "r2_std": 0.026,
+        "mae_media": 33998.44,
+        "mae_std": 2521.55,
+        "rmse_media": 53890.25,
+        "rmse_std": 6522.6,
+        "mape_media": 45.51,
+        "mape_std": 6.54,
+        "r2_por_fold": [
+            0.4215,
+            0.4453,
+            0.474,
+            0.4228,
+            0.3969
+        ]
+    },
+    {
+        "modelo": "SVM",
+        "base": "com_dummy_sem_std",
+        "target_transform": "log",
+        "r2_media": 0.4616,
+        "r2_std": 0.0582,
+        "mae_media": 32591.77,
+        "mae_std": 3412.86,
+        "rmse_media": 52547.86,
+        "rmse_std": 7889.54,
+        "mape_media": 44.44,
+        "mape_std": 9.88,
+        "r2_por_fold": [
+            0.4222,
+            0.5138,
+            0.5368,
+            0.4572,
+            0.3779
+        ]
+    },
+    {
+        "modelo": "Rede Neural",
+        "base": "com_dummy_sem_std",
+        "target_transform": "std_target",
+        "r2_media": 0.3849,
+        "r2_std": 0.0712,
+        "mae_media": 38287.82,
+        "mae_std": 4102.97,
+        "rmse_media": 56158.8,
+        "rmse_std": 8631.21,
+        "mape_media": 58.37,
+        "mape_std": 7.92,
+        "r2_por_fold": [
+            0.3022,
+            0.4593,
+            0.4803,
+            0.3376,
+            0.3448
+        ]
+    }
+]
